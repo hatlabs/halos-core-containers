@@ -23,7 +23,7 @@ services:
       - "8771:80"
     volumes:
       - /usr/share/pixmaps:/mnt/pixmaps:ro
-      - /usr/share/homarr-branding-halos:/mnt/branding:ro
+      - /usr/share/halos-homarr-branding:/mnt/branding:ro
       - /var/lib/container-apps:/mnt/container-apps:ro
       - ${CONTAINER_DATA_ROOT}/nginx-assets.conf:/etc/nginx/conf.d/default.conf:ro
     logging:

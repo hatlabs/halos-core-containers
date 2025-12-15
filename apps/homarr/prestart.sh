@@ -53,7 +53,7 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
-    # Branding assets from /usr/share/homarr-branding-halos
+    # Branding assets from /usr/share/halos-homarr-branding
     location /branding/ {
         alias /mnt/branding/;
         autoindex off;
