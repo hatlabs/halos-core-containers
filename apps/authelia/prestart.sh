@@ -71,19 +71,21 @@ process_template() {
     local template
     template=$(cat "${TEMPLATE_FILE}")
 
-    # Indent private key for YAML (8 spaces)
-    local indented_key
-    indented_key=$(echo "${OIDC_PRIVATE_KEY}" | sed 's/^/          /')
-
-    # Substitute variables
+    # Substitute simple variables
     template="${template//\$\{SESSION_SECRET\}/${SESSION_SECRET}}"
     template="${template//\$\{OIDC_HMAC_SECRET\}/${OIDC_HMAC_SECRET}}"
     template="${template//\$\{HOMARR_CLIENT_SECRET\}/${HOMARR_CLIENT_SECRET}}"
     template="${template//\$\{HALOS_DOMAIN\}/${HALOS_DOMAIN}}"
 
     # Handle private key separately (multi-line)
+    # The template has ${OIDC_PRIVATE_KEY} on its own line with 10 spaces indent
+    # First line of key replaces placeholder (no extra indent needed)
+    # Subsequent lines need 10 spaces to match YAML block scalar indent
+    local formatted_key
+    formatted_key=$(echo "${OIDC_PRIVATE_KEY}" | awk 'NR==1 {print; next} {print "          " $0}')
+
     # Use awk for multi-line substitution
-    echo "${template}" | awk -v key="${indented_key}" '
+    echo "${template}" | awk -v key="${formatted_key}" '
         /\$\{OIDC_PRIVATE_KEY\}/ {
             sub(/\$\{OIDC_PRIVATE_KEY\}/, key)
         }
