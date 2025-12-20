@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+#
+# usage: ./run command [argument ...]
+#
+# Commands for halos-core-containers development and builds.
+
+set -o nounset
+set -o pipefail
+set -o errexit
+
+# Change directory to project root
+PROJECT_ROOT=${0%/*}
+if [[ $0 != $PROJECT_ROOT && $PROJECT_ROOT != "" ]]; then
+  cd "$PROJECT_ROOT"
+fi
+readonly PROJECT_ROOT=$(pwd)
+
+################################################################################
+# Docker Commands
+
+function debtools {
+  #@ Run command in debtools container (Debian packaging)
+  docker compose -f docker/docker-compose.debtools.yml run --rm debtools "$@"
+}
+
+function build-debtools {
+  #@ Build debtools Docker image
+  #@ Category: Docker
+  echo "🐳 Building debtools Docker image..."
+  docker compose -f docker/docker-compose.debtools.yml build debtools
+  echo "✅ Docker image built successfully"
+}
+
+function shell {
+  #@ Open interactive shell in debtools container
+  #@ Category: Docker
+  echo "🐚 Opening shell in debtools container..."
+  debtools bash
+}
+
+################################################################################
+# Build Commands
+
+function build {
+  #@ Build package for a specific app in debtools container
+  #@ Usage: ./run build APP_NAME
+  #@ Category: Build
+  local app_name="${1:-}"
+
+  if [ -z "$app_name" ]; then
+    echo "Error: APP_NAME required"
+    echo "Usage: ./run build APP_NAME"
+    echo ""
+    echo "Available apps:"
+    for app in apps/*/; do
+      echo "  $(basename "$app")"
+    done
+    exit 1
+  fi
+
+  if [ ! -d "apps/$app_name" ]; then
+    echo "Error: App '$app_name' not found in apps/"
+    echo ""
+    echo "Available apps:"
+    for app in apps/*/; do
+      echo "  $(basename "$app")"
+    done
+    exit 1
+  fi
+
+  echo "🏗️  Building app: $app_name"
+
+  debtools bash -c "
+    set -e
+    # Install container-packaging-tools from GitHub
+    uv tool install git+https://github.com/hatlabs/container-packaging-tools.git
+    export PATH=\"\$HOME/.local/bin:\$PATH\"
+
+    # Create build directory
+    mkdir -p build
+
+    # Build the package
+    generate-container-packages -o build --prefix halos apps/$app_name
+  "
+
+  echo "✅ Build complete"
+  echo "📦 Package:"
+  ls -lh build/*${app_name}*.deb 2>/dev/null || echo "No .deb file found"
+}
+
+function build-all {
+  #@ Build all apps in debtools container
+  #@ Category: Build
+  echo "🏗️  Building all apps..."
+
+  debtools bash -c "
+    set -e
+    # Install container-packaging-tools from GitHub
+    uv tool install git+https://github.com/hatlabs/container-packaging-tools.git
+    export PATH=\"\$HOME/.local/bin:\$PATH\"
+
+    # Run the build script
+    ./tools/build-all.sh
+  "
+
+  echo "✅ Build complete"
+  echo "📦 Packages in build/ directory:"
+  ls -lh build/*.deb 2>/dev/null || echo "No .deb files found"
+}
+
+################################################################################
+# Deploy Commands
+
+function deploy {
+  #@ Copy built packages to remote host and install
+  #@ Usage: ./run deploy HOST [APP_NAME]
+  #@ Category: Deploy
+  local host="${1:-}"
+  local app_name="${2:-}"
+
+  if [ -z "$host" ]; then
+    echo "Error: HOST required"
+    echo "Usage: ./run deploy HOST [APP_NAME]"
+    echo "Example: ./run deploy halos.local"
+    echo "Example: ./run deploy halos.local homarr"
+    exit 1
+  fi
+
+  local packages
+  if [ -n "$app_name" ]; then
+    packages=$(ls build/*${app_name}*.deb 2>/dev/null)
+  else
+    packages=$(ls build/*.deb 2>/dev/null)
+  fi
+
+  if [ -z "$packages" ]; then
+    echo "Error: No packages found in build/"
+    echo "Run './run build-all' or './run build APP_NAME' first"
+    exit 1
+  fi
+
+  echo "📤 Copying packages to $host..."
+  scp $packages "${host}:/tmp/"
+
+  echo "📦 Installing packages on $host..."
+  local pkg_names=$(basename -a $packages | tr '\n' ' ')
+  ssh "$host" "cd /tmp && sudo dpkg -i $pkg_names"
+
+  echo "✅ Deployment complete"
+}
+
+################################################################################
+# Utility Commands
+
+function list-apps {
+  #@ List available apps
+  #@ Category: Utility
+  echo "Available apps:"
+  for app in apps/*/; do
+    local name=$(basename "$app")
+    if [ -f "$app/metadata.yaml" ]; then
+      local version=$(grep "^version:" "$app/metadata.yaml" | cut -d: -f2 | xargs)
+      printf "  %-20s %s\n" "$name" "$version"
+    else
+      echo "  $name"
+    fi
+  done
+}
+
+function clean {
+  #@ Clean build artifacts
+  #@ Category: Utility
+  echo "🧹 Cleaning build artifacts..."
+  rm -rf build/
+  echo "✅ Cleaned"
+}
+
+function help {
+  #@ Show this help message
+  #@ Category: Utility
+  echo "HaLOS Core Containers - Development Commands"
+  echo ""
+  echo "Usage: ./run COMMAND [ARGS...]"
+  echo ""
+  echo "Docker:"
+  echo "  build-debtools       Build debtools Docker image"
+  echo "  shell                Open interactive shell in container"
+  echo ""
+  echo "Build:"
+  echo "  build APP_NAME       Build package for specific app"
+  echo "  build-all            Build all apps"
+  echo ""
+  echo "Deploy:"
+  echo "  deploy HOST [APP]    Copy and install packages on remote host"
+  echo ""
+  echo "Utility:"
+  echo "  list-apps            List available apps"
+  echo "  clean                Clean build artifacts"
+  echo "  help                 Show this help message"
+  echo ""
+  echo "Examples:"
+  echo "  ./run build-debtools           # First-time setup"
+  echo "  ./run build homarr             # Build homarr package"
+  echo "  ./run build-all                # Build all packages"
+  echo "  ./run deploy halos.local       # Deploy all packages"
+  echo "  ./run deploy halos.local homarr # Deploy homarr only"
+}
+
+################################################################################
+# Main
+
+# If no command provided, show help
+if [ $# -eq 0 ]; then
+  help
+  exit 0
+fi
+
+# Execute the command
+COMMAND=$1
+shift
+
+if declare -f "$COMMAND" > /dev/null; then
+  "$COMMAND" "$@"
+else
+  echo "Error: Unknown command '$COMMAND'"
+  echo ""
+  help
+  exit 1
+fi
