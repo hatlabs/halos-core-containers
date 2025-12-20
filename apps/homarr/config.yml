@@ -1,5 +1,8 @@
 version: "1.0"
 
+# Homarr configuration
+# Domain is automatically derived from the system hostname: <hostname>.local
+
 groups:
   - id: security
     label: Security Settings
@@ -15,24 +18,14 @@ groups:
           Generate one using: openssl rand -hex 32
           If left empty, a key will be generated automatically on first install.
 
-  - id: network
-    label: Network Settings
-    description: Domain configuration for Traefik routing
-    fields:
-      - id: HALOS_DOMAIN
-        label: Domain
-        type: string
-        default: halos.local
-        description: |
-          The domain for accessing Homarr through Traefik.
-          Must match the domain used by other HaLOS components.
-
   - id: sso
     label: Single Sign-On (OIDC)
     description: |
       Configure OpenID Connect authentication with Authelia.
       When enabled, users will authenticate through Authelia instead of
       Homarr's built-in authentication.
+
+      Note: OIDC URLs are automatically configured based on system hostname.
     fields:
       - id: AUTH_PROVIDERS
         label: Authentication Provider
@@ -46,14 +39,6 @@ groups:
         description: |
           Select the authentication method. Choose "OIDC" to enable
           Single Sign-On with Authelia.
-
-      - id: AUTH_OIDC_ISSUER
-        label: OIDC Issuer URL
-        type: string
-        default: http://auth.halos.local
-        description: |
-          The URL of the OIDC provider (Authelia).
-          Default: http://auth.halos.local
 
       - id: AUTH_OIDC_CLIENT_ID
         label: OIDC Client ID
@@ -85,11 +70,3 @@ groups:
         default: openid profile email groups
         description: |
           Space-separated list of OIDC scopes to request.
-
-      - id: AUTH_LOGOUT_REDIRECT_URL
-        label: Logout Redirect URL
-        type: string
-        default: http://auth.halos.local/logout
-        description: |
-          URL to redirect to after logging out.
-          Set to Authelia logout URL for full SSO logout.

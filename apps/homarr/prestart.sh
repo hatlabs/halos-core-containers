@@ -29,12 +29,26 @@ if [ -z "$SECRET_ENCRYPTION_KEY" ]; then
     echo "SECRET_ENCRYPTION_KEY=\"${SECRET_ENCRYPTION_KEY}\"" >> "${ENV_FILE}"
 fi
 
-# Set hostname
+# Set hostname and domain (matches mDNS publisher)
 HOSTNAME="$(hostname -s)"
+HALOS_DOMAIN="${HOSTNAME}.local"
 echo "HOSTNAME=$HOSTNAME" > "$RUNTIME_ENV"
+echo "HALOS_DOMAIN=$HALOS_DOMAIN" >> "$RUNTIME_ENV"
 
-# Compute Homarr URL
-# Use PORT variable if set, otherwise default to 80
-PORT="${PORT:-80}"
-HOMARR_URL="http://${HOSTNAME}.local:${PORT}/"
+# Also write HALOS_DOMAIN to env file so docker-compose can use it in labels
+# (runtime.env is not loaded by the systemd service currently)
+if ! grep -q "^HALOS_DOMAIN=" "${ENV_FILE}" 2>/dev/null; then
+    echo "HALOS_DOMAIN=\"${HALOS_DOMAIN}\"" >> "${ENV_FILE}"
+fi
+
+# Compute Homarr URL (now goes through Traefik on port 80)
+HOMARR_URL="http://${HALOS_DOMAIN}/"
 echo "HOMARR_URL=$HOMARR_URL" >> "$RUNTIME_ENV"
+
+# Set OIDC URLs if not already configured
+if ! grep -q "^AUTH_OIDC_ISSUER=" "${ENV_FILE}" 2>/dev/null; then
+    echo "AUTH_OIDC_ISSUER=\"http://auth.${HALOS_DOMAIN}\"" >> "${ENV_FILE}"
+fi
+if ! grep -q "^AUTH_LOGOUT_REDIRECT_URL=" "${ENV_FILE}" 2>/dev/null; then
+    echo "AUTH_LOGOUT_REDIRECT_URL=\"http://auth.${HALOS_DOMAIN}/logout\"" >> "${ENV_FILE}"
+fi
