@@ -17,7 +17,7 @@ long_description: |
   Authelia integrates with Traefik reverse proxy to provide unified
   authentication across all HaLOS web interfaces.
 homepage: https://www.authelia.com/
-maintainer: Hat Labs <support@hatlabs.fi>
+maintainer: Matti Airas <matti.airas@hatlabs.fi>
 license: Apache-2.0
 tags:
   - role::container-app
