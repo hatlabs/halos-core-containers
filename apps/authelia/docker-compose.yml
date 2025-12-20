@@ -4,7 +4,7 @@ services:
     container_name: authelia
     restart: unless-stopped
     volumes:
-      - ${CONTAINER_DATA_ROOT}/data:/data
+      - ${CONTAINER_DATA_ROOT}/data:/config
     environment:
       - TZ=${TZ:-UTC}
     networks:
