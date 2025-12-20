@@ -11,6 +11,7 @@ groups:
         label: Timezone
         type: string
         default: UTC
+        required: false
         description: |
           Timezone for Authelia logs and session timestamps.
           Example: Europe/Helsinki, America/New_York
