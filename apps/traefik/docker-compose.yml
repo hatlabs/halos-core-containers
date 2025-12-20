@@ -8,9 +8,9 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${CONTAINER_DATA_ROOT}/config/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ${CONTAINER_DATA_ROOT}/config/dynamic:/etc/traefik/dynamic:ro
-      - ${CONTAINER_DATA_ROOT}/data/acme.json:/acme.json
+      - /var/lib/container-apps/traefik-container/assets/traefik.yml:/etc/traefik/traefik.yml:ro
+      - /var/lib/container-apps/traefik-container/assets/dynamic:/etc/traefik/dynamic:ro
+      - ${CONTAINER_DATA_ROOT}/acme.json:/acme.json
     networks:
       - proxy
     logging:
