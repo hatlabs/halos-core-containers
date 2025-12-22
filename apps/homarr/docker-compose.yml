@@ -1,6 +1,7 @@
 services:
   homarr:
-    image: ghcr.io/homarr-labs/homarr:v1.47.0
+    # Using hatlabs fork until homarr-labs/homarr#4372 is merged
+    image: ghcr.io/hatlabs/homarr:api-key-test
     container_name: homarr
     restart: unless-stopped
     entrypoint: ["/custom-entrypoint.sh"]
