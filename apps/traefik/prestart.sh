@@ -50,4 +50,22 @@ else
     echo "Authelia middleware already exists at ${AUTHELIA_MIDDLEWARE}"
 fi
 
+# ============================================
+# Runtime Routing Label Generation
+# ============================================
+# Generate Traefik labels from generic routing declarations
+# This reads /etc/halos/routing.d/*.yml and generates:
+# - Docker-compose override files in /run/halos/routing-labels/
+# - Per-app ForwardAuth middleware in /etc/halos/traefik-dynamic.d/
+ROUTING_GENERATOR="${SCRIPT_DIR}/generate-routing-labels.sh"
+
+if [ -f "${ROUTING_GENERATOR}" ]; then
+    echo "Generating routing labels from /etc/halos/routing.d/..."
+    # Export HALOS_DOMAIN for the generator script
+    export HALOS_DOMAIN
+    bash "${ROUTING_GENERATOR}"
+else
+    echo "WARNING: Routing generator not found at ${ROUTING_GENERATOR}"
+fi
+
 echo "Traefik prestart complete"
