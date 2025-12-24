@@ -11,7 +11,12 @@ services:
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
       # Dynamic middleware directory - apps drop their files here
       - /etc/halos/traefik-dynamic.d:/etc/traefik/dynamic:ro
+      # Generic routing declarations - read by prestart to generate labels
+      - /etc/halos/routing.d:/etc/halos/routing.d:ro
       - ${CONTAINER_DATA_ROOT}/acme.json:/acme.json
+    extra_hosts:
+      # Required for host networking apps (Traefik routes to host IP)
+      - "host.docker.internal:host-gateway"
     networks:
       - proxy
     logging:
