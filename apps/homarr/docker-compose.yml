@@ -37,6 +37,7 @@ services:
       # HTTP router (redirects to HTTPS)
       - traefik.http.routers.homarr.rule=Host(`${HALOS_DOMAIN}`)
       - traefik.http.routers.homarr.entrypoints=web
+      - traefik.http.routers.homarr.middlewares=redirect-to-https@file
       # HTTPS router
       - traefik.http.routers.homarr-secure.rule=Host(`${HALOS_DOMAIN}`)
       - traefik.http.routers.homarr-secure.entrypoints=websecure

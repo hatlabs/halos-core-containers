@@ -1,0 +1,9 @@
+# HTTP to HTTPS Redirect Middleware
+# Loaded by Traefik's file provider.
+
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true

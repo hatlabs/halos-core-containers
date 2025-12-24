@@ -189,7 +189,16 @@ generate_override() {
         backend_label="      traefik.http.services.${app_id}.loadbalancer.server.port: \"${port}\""
     fi
 
-    # Generate override file
+    # Build middleware labels for both routers
+    local http_middleware_label=""
+    local https_middleware_label=""
+    if [ -n "${middleware_label}" ]; then
+        # Replace the router name for each entrypoint
+        http_middleware_label="${middleware_label}"
+        https_middleware_label=$(echo "${middleware_label}" | sed "s/routers\.${app_id}\./routers.${app_id}-secure./")
+    fi
+
+    # Generate override file with separate HTTP and HTTPS routers
     local override_file="${OUTPUT_DIR}/${app_id}.yml"
 
     cat > "${override_file}" << EOF
@@ -201,9 +210,16 @@ services:
   ${service_name}:
     labels:
       traefik.enable: "true"
+      # HTTP router - redirects to HTTPS
       traefik.http.routers.${app_id}.rule: "${host_rule}"
-      traefik.http.routers.${app_id}.entrypoints: "web,websecure"
-${middleware_label}
+      traefik.http.routers.${app_id}.entrypoints: "web"
+      traefik.http.routers.${app_id}.middlewares: "redirect-to-https@file"
+      # HTTPS router (websecure entrypoint with TLS)
+      traefik.http.routers.${app_id}-secure.rule: "${host_rule}"
+      traefik.http.routers.${app_id}-secure.entrypoints: "websecure"
+      traefik.http.routers.${app_id}-secure.tls: "true"
+${https_middleware_label}
+      # Backend service
 ${backend_label}
       halos.subdomain: "${subdomain}"
 EOF
