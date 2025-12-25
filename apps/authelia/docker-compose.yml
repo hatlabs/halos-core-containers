@@ -13,9 +13,10 @@ services:
       - proxy
     labels:
       - traefik.enable=true
-      # HTTP router
+      # HTTP router (redirects to HTTPS)
       - traefik.http.routers.authelia.rule=Host(`auth.${HALOS_DOMAIN:-halos.local}`)
       - traefik.http.routers.authelia.entrypoints=web
+      - traefik.http.routers.authelia.middlewares=redirect-to-https@file
       # HTTPS router
       - traefik.http.routers.authelia-secure.rule=Host(`auth.${HALOS_DOMAIN:-halos.local}`)
       - traefik.http.routers.authelia-secure.entrypoints=websecure
