@@ -8,8 +8,15 @@ services:
     command: ["sh", "run.sh"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      # Allow Homarr to resolve auth subdomain for OIDC (mDNS doesn't work in containers)
+      - "auth.${HALOS_DOMAIN}:host-gateway"
     environment:
       - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY}
+      # Tell NextAuth the canonical HTTPS URL (behind Traefik proxy)
+      - NEXTAUTH_URL=https://${HALOS_DOMAIN}
+      # SECURITY: Disables TLS verification for ALL Node.js HTTPS requests.
+      # Required for self-signed Traefik certs. Acceptable for local-only device.
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
       # SSO/OIDC configuration (optional, set AUTH_PROVIDERS=oidc to enable)
       - AUTH_PROVIDERS=${AUTH_PROVIDERS:-}
       - AUTH_OIDC_ISSUER=${AUTH_OIDC_ISSUER}
