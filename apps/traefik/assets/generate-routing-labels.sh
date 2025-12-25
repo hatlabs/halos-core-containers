@@ -189,12 +189,9 @@ generate_override() {
         backend_label="      traefik.http.services.${app_id}.loadbalancer.server.port: \"${port}\""
     fi
 
-    # Build middleware labels for both routers
-    local http_middleware_label=""
+    # Build middleware label for HTTPS router (HTTP router only uses redirect-to-https)
     local https_middleware_label=""
     if [ -n "${middleware_label}" ]; then
-        # Replace the router name for each entrypoint
-        http_middleware_label="${middleware_label}"
         https_middleware_label=$(echo "${middleware_label}" | sed "s/routers\.${app_id}\./routers.${app_id}-secure./")
     fi
 
