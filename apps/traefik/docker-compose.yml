@@ -21,8 +21,6 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - proxy
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     logging:
       driver: journald
       options:

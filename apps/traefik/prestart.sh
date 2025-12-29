@@ -85,6 +85,7 @@ fi
 # Generate dynamic TLS configuration for Traefik
 # This tells Traefik to use our persistent certificate as the default
 TLS_CONFIG_FILE="/etc/halos/traefik-dynamic.d/tls-default.yml"
+mkdir -p "$(dirname "${TLS_CONFIG_FILE}")"
 
 cat > "${TLS_CONFIG_FILE}" << EOF
 # Default TLS certificate configuration
