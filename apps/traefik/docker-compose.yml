@@ -14,6 +14,8 @@ services:
       # Generic routing declarations - read by prestart to generate labels
       - /etc/halos/routing.d:/etc/halos/routing.d:ro
       - ${CONTAINER_DATA_ROOT}/acme.json:/acme.json
+      # Persistent self-signed TLS certificates
+      - ${CONTAINER_DATA_ROOT}/certs:/certs:ro
     extra_hosts:
       # Required for host networking apps (Traefik routes to host IP)
       - "host.docker.internal:host-gateway"
