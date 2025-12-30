@@ -83,9 +83,8 @@ Authelia provides both OIDC provider and Forward Auth functionality.
 
 ### mDNS Publisher
 
-**Image**: `ghcr.io/hatlabs/halos-mdns-publisher:latest`
-**Network**: Host network mode (required for mDNS)
-**Ports**: None
+**Package**: `halos-mdns-publisher` (native Debian package)
+**Type**: Native systemd service (not a container)
 
 The mDNS publisher enables subdomain resolution on local networks without DNS infrastructure.
 
@@ -95,12 +94,13 @@ The mDNS publisher enables subdomain resolution on local networks without DNS in
 - Run `avahi-publish` for each subdomain
 - Clean up registrations when containers stop
 
-**Implementation approach**:
-- Dedicated container image built from Alpine base
-- Pre-installed: docker-cli, avahi-tools, jq
-- Shell script using `docker events` for monitoring
-- One `avahi-publish` process per subdomain
-- Process management via shell job control
+**Implementation**:
+- Native Rust binary with async Docker API client (bollard)
+- Runs as systemd service with socket activation
+- Spawns `avahi-publish` subprocess per subdomain
+- Automatic health checks and process recovery
+
+**Note**: The mDNS publisher was originally a container but has been migrated to a native package for better system integration and reliability. The native package (`halos-mdns-publisher`) conflicts with and replaces the old container package (`halos-mdns-publisher-container`).
 
 ### Application Containers
 
@@ -397,12 +397,6 @@ halos-core-containers/
 │   │   └── assets/
 │   │       └── configuration.yml.template
 │   │
-│   ├── mdns-publisher/
-│   │   ├── docker-compose.yml
-│   │   ├── metadata.yaml
-│   │   └── assets/
-│   │       └── publish-subdomains.sh
-│   │
 │   └── homarr/
 │       ├── docker-compose.yml
 │       ├── metadata.yaml                # routing.auth.mode: oidc
@@ -502,8 +496,6 @@ routing:
 ```
 traefik-container
        │
-       ├── mdns-publisher-container
-       │
        ├── authelia-container
        │
        └── application containers
@@ -511,9 +503,11 @@ traefik-container
             ├── grafana-container (ForwardAuth)
             ├── influxdb-container (ForwardAuth)
             └── signalk-container (ForwardAuth, host networking)
+
+halos-mdns-publisher (native service, independent)
 ```
 
-Package dependencies ensure correct installation order. Systemd service dependencies ensure correct startup order.
+Package dependencies ensure correct installation order. Systemd service dependencies ensure correct startup order. The mDNS publisher runs as an independent native systemd service.
 
 ## Dynamic Registration
 

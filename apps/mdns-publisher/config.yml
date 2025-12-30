@@ -1,7 +1,0 @@
-version: "1.0"
-
-# mDNS Publisher configuration
-# Domain is automatically derived from the system hostname: <hostname>.local
-# No user configuration required.
-
-groups: []
