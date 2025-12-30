@@ -56,7 +56,7 @@ echo "deb [signed-by=/usr/share/keyrings/hatlabs-apt-key.gpg] https://apt.hatlab
 
 # Update and install
 sudo apt update
-sudo apt install halos-homarr-container halos-traefik-container halos-authelia-container halos-mdns-publisher-container
+sudo apt install halos-homarr-container halos-traefik-container halos-authelia-container
 \`\`\`
 
 EOF
@@ -77,7 +77,6 @@ ${CHANGELOG}
 - **halos-homarr-container** - Homarr dashboard (main landing page)
 - **halos-traefik-container** - Traefik reverse proxy with TLS
 - **halos-authelia-container** - Authelia single sign-on
-- **halos-mdns-publisher-container** - mDNS service publisher
 
 ### Installation
 
@@ -85,7 +84,7 @@ Built Debian packages are attached to this release and available from [apt.hatla
 
 \`\`\`bash
 sudo apt update
-sudo apt install halos-homarr-container halos-traefik-container halos-authelia-container halos-mdns-publisher-container
+sudo apt install halos-homarr-container halos-traefik-container halos-authelia-container
 \`\`\`
 
 ### Development
@@ -111,7 +110,6 @@ ${CHANGELOG}
 - **halos-homarr-container** - Homarr dashboard (main landing page)
 - **halos-traefik-container** - Traefik reverse proxy with TLS
 - **halos-authelia-container** - Authelia single sign-on
-- **halos-mdns-publisher-container** - mDNS service publisher
 
 ### Installation
 
@@ -119,7 +117,7 @@ Built Debian packages are attached to this release and available from [apt.hatla
 
 \`\`\`bash
 sudo apt update
-sudo apt install halos-homarr-container halos-traefik-container halos-authelia-container halos-mdns-publisher-container
+sudo apt install halos-homarr-container halos-traefik-container halos-authelia-container
 \`\`\`
 
 ### Development

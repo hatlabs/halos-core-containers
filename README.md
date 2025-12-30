@@ -9,7 +9,6 @@ This repository contains core HaLOS container applications:
 - **Traefik** - Reverse proxy and load balancer, routes all web traffic via subdomains
 - **Authelia** - Identity provider for SSO (OIDC + ForwardAuth)
 - **Homarr** - Dashboard landing page at `https://{hostname}.local/`
-- **mDNS Publisher** - Advertises app subdomains via Avahi/mDNS
 
 **Key difference from halos-marine-containers:** No store package - core apps are pre-installed in HaLOS images, not discovered via store UI.
 
@@ -30,7 +29,6 @@ CI/CD builds Debian packages from this repository:
 - `halos-traefik-container` - Reverse proxy
 - `halos-authelia-container` - SSO identity provider
 - `halos-homarr-container` - Dashboard landing page
-- `halos-mdns-publisher-container` - mDNS subdomain advertising
 
 All packages are published to apt.hatlabs.fi.
 
@@ -62,8 +60,7 @@ halos-core-containers/
 ├── apps/
 │   ├── traefik/            # Reverse proxy
 │   ├── authelia/           # SSO identity provider
-│   ├── homarr/             # Dashboard landing page
-│   └── mdns-publisher/     # mDNS subdomain advertising
+│   └── homarr/             # Dashboard landing page
 ├── docs/
 │   ├── SSO_SPEC.md         # SSO technical specification
 │   └── SSO_ARCHITECTURE.md # SSO system architecture
