@@ -1,6 +1,6 @@
 name: Authelia
 app_id: authelia
-version: 4.39.15-3
+version: 4.39.15-4
 upstream_version: 4.39.15
 description: Identity provider for HaLOS Single Sign-On
 long_description: |
@@ -36,7 +36,10 @@ web_ui:
   path: /
   protocol: http
   visible: false
+# Authelia is the auth portal and must be accessible at auth.halos.local
+# (not authelia.halos.local). This matches the authelia_url in configuration.yml.
+# Auth mode is "none" because Authelia IS the auth provider - it can't protect itself!
 routing:
-  subdomain: auth  # Short subdomain for auth.halos.local
+  subdomain: "auth"
   auth:
-    mode: none  # Authelia must not protect itself
+    mode: "none"
