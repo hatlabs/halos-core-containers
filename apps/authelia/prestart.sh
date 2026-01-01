@@ -300,18 +300,37 @@ process_template
 # Merge OIDC client snippets
 merge_oidc_clients
 
-# Create empty users database if it doesn't exist
-# This will be populated by homarr-container-adapter credential sync
+# Create users database with initial admin user if it doesn't exist
+# Authelia requires at least one user to start successfully
 if [ ! -f "${DATA_DIR}/users_database.yml" ]; then
-    echo "Creating empty users database..."
-    cat > "${DATA_DIR}/users_database.yml" << 'EOF'
-# Authelia Users Database
-# This file is managed by homarr-container-adapter
-# Manual edits may be overwritten
+    echo "Creating initial users database with admin user..."
 
-users: {}
+    # Use well-known default password - user should change after first login
+    DEFAULT_PASSWORD="halos"
+
+    # Hash it using Authelia's CLI (argon2id is the default and recommended algorithm)
+    INITIAL_HASH=$(docker run --rm authelia/authelia:4.39 authelia crypto hash generate argon2 \
+        --password "${DEFAULT_PASSWORD}" 2>/dev/null | grep 'Digest:' | sed 's/Digest: //')
+
+    if [ -z "${INITIAL_HASH}" ]; then
+        echo "ERROR: Failed to generate password hash"
+        exit 1
+    fi
+
+    cat > "${DATA_DIR}/users_database.yml" << EOF
+# Authelia Users Database
+# Managed by halos-authelia-container
+# Default admin password is "halos" - please change after first login
+users:
+  admin:
+    displayname: "Administrator"
+    email: admin@halos.local
+    password: "${INITIAL_HASH}"
+    groups:
+      - admins
 EOF
     chmod 600 "${DATA_DIR}/users_database.yml"
+    echo "Created admin user with default password 'halos'"
 fi
 
 echo "Authelia prestart complete"
