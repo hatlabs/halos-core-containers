@@ -1,0 +1,50 @@
+name: HaLOS Core Containers
+app_id: core-containers
+# Version comes from VERSION file in repo root
+description: Core infrastructure stack (Traefik, Authelia, Homarr)
+long_description: |
+  HaLOS core infrastructure providing the foundational web services:
+
+  - Traefik: Reverse proxy and load balancer for all HaLOS web traffic
+  - Authelia: Single Sign-On (SSO) identity provider with OIDC support
+  - Homarr: Dashboard landing page for accessing all installed applications
+
+  These services are tightly integrated and managed as a single unit.
+  Traefik handles HTTPS termination and routing, Authelia provides
+  authentication, and Homarr serves as the main user interface.
+
+homepage: https://github.com/hatlabs/halos-core-containers
+maintainer: Hat Labs <info@hatlabs.fi>
+license: MIT
+
+tags:
+  - role::container-app
+  - field::core
+  - category::infrastructure
+  - interface::web
+
+debian_section: web
+architecture: all
+
+depends:
+  - docker-ce (>= 20.10) | docker.io (>= 20.10)
+
+recommends:
+  - halos-cockpit-config
+  - halos-homarr-branding
+
+# Virtual package for reverse proxy capability
+provides:
+  - halos-reverse-proxy
+
+conflicts:
+  - halos-reverse-proxy
+
+# System binaries provided for other containers to use
+system_bin:
+  - configure-container-routing
+  - reload-oidc-clients
+
+# No web_ui or routing - these services ARE the routing infrastructure
+web_ui:
+  enabled: false

@@ -1,0 +1,21 @@
+[Unit]
+Description=HaLOS Core Containers (Traefik, Authelia, Homarr)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/lib/container-apps/halos-core-containers
+ExecStartPre=/var/lib/container-apps/halos-core-containers/prestart.sh
+EnvironmentFile=-/etc/container-apps/halos-core-containers/env.defaults
+EnvironmentFile=-/etc/container-apps/halos-core-containers/env
+EnvironmentFile=-/run/container-apps/halos-core-containers/runtime.env
+ExecStart=docker compose up
+ExecStop=docker compose down
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 version: "1.0"
 
-# Authelia configuration
+# HaLOS Core Containers configuration
 # Domain is automatically derived from the system hostname: <hostname>.local
 
 groups:
@@ -13,5 +13,5 @@ groups:
         default: UTC
         required: false
         description: |
-          Timezone for Authelia logs and session timestamps.
+          Timezone for service logs and session timestamps.
           Example: Europe/Helsinki, America/New_York

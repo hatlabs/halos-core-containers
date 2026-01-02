@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+PKG_NAME="halos-core-containers"
+ETC_DIR="/etc/container-apps/${PKG_NAME}"
+
+case "$1" in
+    purge)
+        # Remove configuration directory and all contents
+        rm -rf "${ETC_DIR}"
+
+        # Only interact with systemd if it's running
+        if [ -d /run/systemd/system ]; then
+            # Reload systemd (service file removed automatically by dpkg)
+            systemctl daemon-reload || true
+        fi
+        ;;
+
+    remove)
+        # On remove (not purge), keep config but remove application files
+        # Application files in /var/lib/ are already removed by dpkg
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

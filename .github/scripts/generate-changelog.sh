@@ -1,16 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-# This script is called by the shared workflow but intentionally does NOT
-# generate a debian/changelog. Container packages are built dynamically using
-# container-packaging-tools, which generates its own versioned packages.
-#
-# The VERSION file is a meta/bundle version for git tags only,
-# not used for individual package versions.
+# Generate debian/changelog from VERSION file
+# Called by CI workflow with --upstream and --revision arguments
 
-# Parse arguments (we accept them but don't use them)
 UPSTREAM=""
-REVISION=""
+REVISION="1"
+PKG_NAME="halos-core-containers"
+MAINTAINER="Hat Labs <info@hatlabs.fi>"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -28,6 +25,25 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "Skipping changelog generation (using container-packaging-tools)"
-echo "Container packages get versions from metadata.yaml in each app directory"
-echo "Bundle version: ${UPSTREAM:-unknown}-${REVISION:-unknown}"
+# Read upstream from VERSION if not provided
+if [[ -z "$UPSTREAM" ]]; then
+    if [[ -f VERSION ]]; then
+        UPSTREAM=$(cat VERSION)
+    else
+        echo "ERROR: VERSION file not found and --upstream not provided"
+        exit 1
+    fi
+fi
+
+# Generate debian/changelog
+mkdir -p debian
+
+cat > debian/changelog << EOF
+${PKG_NAME} (${UPSTREAM}-${REVISION}) unstable; urgency=medium
+
+  * Automated build
+
+ -- ${MAINTAINER}  $(date -R)
+EOF
+
+echo "Generated debian/changelog with version ${UPSTREAM}-${REVISION}"

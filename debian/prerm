@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+PKG_NAME="halos-core-containers"
+
+case "$1" in
+    remove|deconfigure)
+        # Only interact with systemd if it's running
+        if [ -d /run/systemd/system ]; then
+            # Stop the service before removal
+            systemctl stop ${PKG_NAME}.service || true
+            systemctl disable ${PKG_NAME}.service || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

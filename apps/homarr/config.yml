@@ -1,7 +1,0 @@
-version: "1.0"
-
-# Homarr configuration
-# Domain and SSO are automatically configured based on system hostname.
-# No user configuration required.
-
-groups: []
