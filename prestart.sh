@@ -251,6 +251,9 @@ declare -A HOMARR_SSO_CONFIG=(
 for key in "${!HOMARR_SSO_CONFIG[@]}"; do
     if ! grep -q "^${key}=" "${ENV_FILE}" 2>/dev/null; then
         echo "${key}=\"${HOMARR_SSO_CONFIG[$key]}\"" >> "${ENV_FILE}"
+    elif [ "${key}" = "AUTH_OIDC_CLIENT_SECRET" ]; then
+        # Always update client secret to match oidc-secret file
+        sed -i "s|^AUTH_OIDC_CLIENT_SECRET=.*|AUTH_OIDC_CLIENT_SECRET=\"${OIDC_CLIENT_SECRET}\"|" "${ENV_FILE}"
     fi
 done
 
