@@ -28,10 +28,10 @@ architecture: all
 
 depends:
   - docker-ce (>= 20.10) | docker.io (>= 20.10)
+  - halos-homarr-branding
 
 recommends:
   - halos-cockpit-config
-  - halos-homarr-branding
 
 # Virtual package for reverse proxy capability
 provides:

@@ -28,13 +28,11 @@ override_dh_auto_install:
 
 	# Install assets (preserving directory structure, +x for .sh files)
 	for dir in traefik authelia homarr; do \
-		for f in assets/$$dir/*; do \
-			if [ -f "$$f" ]; then \
-				case "$$f" in \
-					*.sh) install -D -m 755 "$$f" "debian/$(PKG_NAME)$(LIB_DIR)/$$f" ;; \
-					*) install -D -m 644 "$$f" "debian/$(PKG_NAME)$(LIB_DIR)/$$f" ;; \
-				esac; \
-			fi; \
+		find assets/$$dir -type f | while read f; do \
+			case "$$f" in \
+				*.sh) install -D -m 755 "$$f" "debian/$(PKG_NAME)$(LIB_DIR)/$$f" ;; \
+				*) install -D -m 644 "$$f" "debian/$(PKG_NAME)$(LIB_DIR)/$$f" ;; \
+			esac; \
 		done; \
 	done
 
