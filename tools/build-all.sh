@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build all container app packages (no store package for core apps)
+# Build halos-core-containers Debian package
 
 set -e
 
@@ -7,51 +7,39 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="${REPO_ROOT}/build"
 
-echo "Building all core container packages..."
+echo "Building halos-core-containers package..."
 echo "Repository root: $REPO_ROOT"
 echo "Build directory: $BUILD_DIR"
+
+cd "$REPO_ROOT"
+
+# Read version from VERSION file
+if [ ! -f VERSION ]; then
+    echo "ERROR: VERSION file not found"
+    exit 1
+fi
+VERSION=$(cat VERSION)
+echo "Package version: $VERSION"
+
+# Generate changelog
+echo "Generating debian/changelog..."
+.github/scripts/generate-changelog.sh --upstream "$VERSION" --revision 1
 
 # Clean build directory
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-# Build container app packages using container-packaging-tools
-if command -v uvx >/dev/null 2>&1; then
-    echo ""
-    echo "=== Building container app packages ==="
+# Build the package
+echo ""
+echo "=== Building Debian package ==="
+dpkg-buildpackage -b -us -uc
 
-    # Determine tools source: local path, git ref, or default
-    TOOLS_PATH="${CONTAINER_TOOLS_PATH:-}"
-    TOOLS_REF="${CONTAINER_TOOLS_REF:-}"
-    if [ -n "$TOOLS_PATH" ]; then
-        TOOLS_SOURCE="$TOOLS_PATH"
-        echo "Using local container-packaging-tools from: $TOOLS_PATH"
-    elif [ -n "$TOOLS_REF" ]; then
-        TOOLS_SOURCE="git+https://github.com/hatlabs/container-packaging-tools.git@${TOOLS_REF}"
-        echo "Using container-packaging-tools ref: $TOOLS_REF"
-    else
-        TOOLS_SOURCE="git+https://github.com/hatlabs/container-packaging-tools.git"
-        echo "Using container-packaging-tools from main branch"
-    fi
-
-    for app_dir in "${REPO_ROOT}/apps"/*; do
-        if [ -d "$app_dir" ]; then
-            app_name=$(basename "$app_dir")
-            echo "Building package for: $app_name"
-            if ! uvx --from "$TOOLS_SOURCE" \
-                     generate-container-packages -o "$BUILD_DIR" --prefix halos "$app_dir"; then
-                echo "ERROR: Failed to build package for $app_name" >&2
-                exit 1
-            fi
-        fi
-    done
-else
-    echo ""
-    echo "WARNING: uvx not installed"
-    echo "Install with: pip install uv"
-    echo "Skipping container app package generation"
-    exit 1
-fi
+# Move artifacts to build directory
+echo ""
+echo "=== Moving artifacts to build directory ==="
+mv ../*.deb "$BUILD_DIR/" 2>/dev/null || true
+mv ../*.buildinfo "$BUILD_DIR/" 2>/dev/null || true
+mv ../*.changes "$BUILD_DIR/" 2>/dev/null || true
 
 # List built packages
 echo ""

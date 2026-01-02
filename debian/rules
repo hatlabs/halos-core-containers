@@ -1,0 +1,48 @@
+#!/usr/bin/make -f
+
+PKG_NAME = halos-core-containers
+LIB_DIR = /var/lib/container-apps/$(PKG_NAME)
+ETC_DIR = /etc/container-apps/$(PKG_NAME)
+SYSTEMD_DIR = /lib/systemd/system
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# Nothing to build - container app
+
+override_dh_auto_install:
+	# Install application files to /var/lib/container-apps/
+	install -D -m 644 docker-compose.yml \
+		debian/$(PKG_NAME)$(LIB_DIR)/docker-compose.yml
+	install -D -m 644 metadata.yaml \
+		debian/$(PKG_NAME)$(LIB_DIR)/metadata.yaml
+	install -D -m 644 config.yml \
+		debian/$(PKG_NAME)$(LIB_DIR)/config.yml
+	install -D -m 755 prestart.sh \
+		debian/$(PKG_NAME)$(LIB_DIR)/prestart.sh
+
+	# Install icon
+	install -D -m 644 icon.png \
+		debian/$(PKG_NAME)/usr/share/pixmaps/$(PKG_NAME).png
+
+	# Install assets (preserving directory structure, +x for .sh files)
+	for dir in traefik authelia homarr; do \
+		find assets/$$dir -type f | while read f; do \
+			case "$$f" in \
+				*.sh) install -D -m 755 "$$f" "debian/$(PKG_NAME)$(LIB_DIR)/$$f" ;; \
+				*) install -D -m 644 "$$f" "debian/$(PKG_NAME)$(LIB_DIR)/$$f" ;; \
+			esac; \
+		done; \
+	done
+
+	# Install system binaries to /usr/bin/
+	install -D -m 755 assets/configure-container-routing \
+		debian/$(PKG_NAME)/usr/bin/configure-container-routing
+	install -D -m 755 assets/reload-oidc-clients \
+		debian/$(PKG_NAME)/usr/bin/reload-oidc-clients
+
+override_dh_auto_test:
+	# Skip tests - validated manually
+
+# dh_installsystemd handles service file installation from debian/halos-core-containers.service

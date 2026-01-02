@@ -31,9 +31,9 @@ function build-debtools {
 }
 
 function build {
-  #@ Build all container packages (in Docker)
+  #@ Build halos-core-containers package (in Docker)
   #@ Category: Build
-  echo "Building all container packages..."
+  echo "Building halos-core-containers package..."
 
   # Ensure Docker image exists
   if ! docker image inspect "$DOCKER_IMAGE" &>/dev/null; then
@@ -42,16 +42,7 @@ function build {
   fi
 
   # Run build in Docker container
-  # CONTAINER_TOOLS_REF can specify a git ref for container-packaging-tools
-  # CONTAINER_TOOLS_PATH can specify a local path to mount (for development)
-  local mount_opts="-v $(pwd):/workspace"
-  if [[ -n "${CONTAINER_TOOLS_PATH:-}" ]]; then
-    mount_opts="$mount_opts -v $CONTAINER_TOOLS_PATH:/container-tools"
-  fi
-
-  docker run --rm $mount_opts \
-    -e CONTAINER_TOOLS_REF="${CONTAINER_TOOLS_REF:-}" \
-    -e CONTAINER_TOOLS_PATH="${CONTAINER_TOOLS_PATH:+/container-tools}" \
+  docker run --rm -v "$(pwd):/workspace" \
     "$DOCKER_IMAGE" \
     bash -c "cd /workspace && ./tools/build-all.sh"
 }
@@ -60,38 +51,26 @@ function build {
 # Deploy Commands
 
 function deploy {
-  #@ Deploy packages to test server (usage: ./run deploy <target> [packages])
+  #@ Deploy package to test server (usage: ./run deploy <target>)
   #@ Category: Deploy
   local target="${1:-}"
-  local packages="${2:-all}"
 
   if [[ -z "$target" ]]; then
-    echo "Usage: ./run deploy <target> [packages]"
+    echo "Usage: ./run deploy <target>"
     echo ""
     echo "Arguments:"
     echo "  target     Target host (e.g., pi@myhost.local)"
-    echo "  packages   Package names or 'all' (default: all)"
     echo ""
     echo "Examples:"
     echo "  ./run deploy pi@myhost.local"
-    echo "  ./run deploy pi@myhost.local homarr"
     return 1
   fi
   local deb_files=()
 
-  if [ "$packages" = "all" ]; then
-    # Deploy all built packages
-    for deb in build/*.deb; do
-      [ -f "$deb" ] && deb_files+=("$deb")
-    done
-  else
-    # Deploy specific package(s)
-    for pkg in $packages; do
-      local deb_file
-      deb_file=$(ls -t build/halos-${pkg}-container*.deb 2>/dev/null | head -1)
-      [ -n "$deb_file" ] && deb_files+=("$deb_file")
-    done
-  fi
+  # Deploy all built packages (single package now)
+  for deb in build/*.deb; do
+    [ -f "$deb" ] && deb_files+=("$deb")
+  done
 
   if [ ${#deb_files[@]} -eq 0 ]; then
     echo "No .deb files found. Run ./run build first."
@@ -115,7 +94,7 @@ function deploy {
 }
 
 function deploy-build {
-  #@ Build and deploy homarr-container to test server
+  #@ Build and deploy package to test server
   #@ Category: Deploy
   build
   deploy "$@"
@@ -124,8 +103,12 @@ function deploy-build {
 function status {
   #@ Show installed package version on test server
   #@ Category: Deploy
-  local target="${1:-$DEFAULT_DEPLOY_TARGET}"
-  ssh "$target" "dpkg -l | grep halos-homarr-container || echo 'Not installed'"
+  local target="${1:-}"
+  if [[ -z "$target" ]]; then
+    echo "Usage: ./run status <target>"
+    return 1
+  fi
+  ssh "$target" "dpkg -l | grep halos-core-containers || echo 'Not installed'"
 }
 
 ################################################################################
@@ -169,12 +152,12 @@ function help {
   }' "$0"
 
   echo ""
-  echo "Usage: ./run <command> [target_host]"
+  echo "Usage: ./run <command> [arguments]"
   echo ""
   echo "Quick start:"
   echo "  1. ./run build-debtools             # Build packaging container (first time)"
-  echo "  2. ./run build                      # Build all container packages"
-  echo "  3. ./run deploy pi@myhost.local     # Deploy container packages to test server"
+  echo "  2. ./run build                      # Build halos-core-containers package"
+  echo "  3. ./run deploy pi@myhost.local     # Deploy package to test server"
 }
 
 ################################################################################

@@ -1,0 +1,47 @@
+#!/bin/sh
+set -e
+
+PKG_NAME="halos-core-containers"
+LIB_DIR="/var/lib/container-apps/${PKG_NAME}"
+ETC_DIR="/etc/container-apps/${PKG_NAME}"
+DATA_DIR="${LIB_DIR}/data"
+
+case "$1" in
+    configure)
+        # Create configuration directory if it doesn't exist
+        mkdir -p "${ETC_DIR}"
+
+        # Create env.defaults with CONTAINER_DATA_ROOT
+        cat > "${ETC_DIR}/env.defaults" << EOF
+# System-managed environment variables (do not modify)
+CONTAINER_DATA_ROOT="${DATA_DIR}"
+EOF
+
+        # Create data directory structure
+        mkdir -p "${DATA_DIR}/traefik/dynamic"
+        mkdir -p "${DATA_DIR}/traefik/acme"
+        mkdir -p "${DATA_DIR}/authelia"
+        mkdir -p "${DATA_DIR}/homarr/configs"
+        mkdir -p "${DATA_DIR}/homarr/data"
+        mkdir -p "${DATA_DIR}/homarr/icons"
+
+        # Create routing directories used by other container apps
+        mkdir -p /etc/halos/routing.d
+        mkdir -p /etc/halos/oidc-clients.d
+        mkdir -p /etc/halos/traefik-dynamic.d
+        mkdir -p /run/halos/routing-labels
+
+        # Only interact with systemd if it's running (not in containers or minimal envs)
+        if [ -d /run/systemd/system ]; then
+            # Reload systemd to recognize new service
+            systemctl daemon-reload
+
+            # Enable service
+            systemctl enable ${PKG_NAME}.service || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
