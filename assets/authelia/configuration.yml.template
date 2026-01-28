@@ -25,6 +25,10 @@ authentication_backend:
 
 session:
   secret: '${SESSION_SECRET}'
+  # Long session lifetimes for environments with intermittent use (e.g., boats)
+  expiration: 8760h      # 1 year
+  inactivity: 8760h      # 1 year (effectively disables idle timeout)
+  remember_me: 8760h     # 1 year
   cookies:
     - domain: '${HALOS_DOMAIN}'
       authelia_url: 'https://auth.${HALOS_DOMAIN}'
