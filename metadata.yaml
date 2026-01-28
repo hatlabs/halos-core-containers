@@ -27,7 +27,8 @@ debian_section: web
 architecture: all
 
 depends:
-  - docker-ce (>= 20.10) | docker.io (>= 20.10)
+  - docker.io (>= 20.10) | docker-ce (>= 20.10)
+  - docker-compose | docker-compose-plugin
   - halos-homarr-branding
 
 recommends:
