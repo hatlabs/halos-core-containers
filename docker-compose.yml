@@ -70,7 +70,7 @@ services:
         tag: "{{.Name}}"
 
   authelia-valkey:
-    image: valkey/valkey:9.0.1-alpine
+    image: valkey/valkey:9.0.2-alpine
     container_name: authelia-valkey
     restart: unless-stopped
     volumes:
@@ -94,7 +94,7 @@ services:
         tag: "{{.Name}}"
 
   homarr:
-    image: ghcr.io/homarr-labs/homarr:v1.51.0
+    image: ghcr.io/homarr-labs/homarr:v1.53.0
     container_name: homarr
     restart: unless-stopped
     depends_on:
