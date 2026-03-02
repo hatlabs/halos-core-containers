@@ -170,7 +170,7 @@ http:
 EOF
 chmod 644 "${COCKPIT_CONFIG_FILE}"
 
-# Authelia routing is done via Docker labels in docker-compose.yml (PathPrefix /auth/)
+# Authelia routing is done via Docker labels in docker-compose.yml (PathPrefix /sso/)
 
 # Install dynamic config files from package
 if [ -d "${DYNAMIC_SRC_DIR}" ]; then
@@ -273,22 +273,23 @@ fi
 # Set OIDC configuration for Homarr
 declare -A HOMARR_SSO_CONFIG=(
     ["AUTH_PROVIDERS"]="oidc"
-    ["AUTH_OIDC_ISSUER"]="https://${HALOS_DOMAIN}/auth"
+    ["AUTH_OIDC_ISSUER"]="https://${HALOS_DOMAIN}/sso"
     ["AUTH_OIDC_CLIENT_ID"]="homarr"
     ["AUTH_OIDC_CLIENT_SECRET"]="${OIDC_CLIENT_SECRET}"
     ["AUTH_OIDC_CLIENT_NAME"]="HaLOS"
     ["AUTH_OIDC_SCOPE_OVERWRITE"]="openid profile email groups"
-    ["AUTH_LOGOUT_REDIRECT_URL"]="https://${HALOS_DOMAIN}/auth/logout"
+    ["AUTH_LOGOUT_REDIRECT_URL"]="https://${HALOS_DOMAIN}/sso/logout"
     ["AUTH_OIDC_FORCE_USERINFO"]="true"
     ["AUTH_OIDC_ENABLE_DANGEROUS_ACCOUNT_LINKING"]="true"
 )
 
+# Always update all OIDC keys so that URL changes (e.g., routing scheme
+# migration) take effect on existing installs without manual intervention.
 for key in "${!HOMARR_SSO_CONFIG[@]}"; do
-    if ! grep -q "^${key}=" "${ENV_FILE}" 2>/dev/null; then
+    if grep -q "^${key}=" "${ENV_FILE}" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=\"${HOMARR_SSO_CONFIG[$key]}\"|" "${ENV_FILE}"
+    else
         echo "${key}=\"${HOMARR_SSO_CONFIG[$key]}\"" >> "${ENV_FILE}"
-    elif [ "${key}" = "AUTH_OIDC_CLIENT_SECRET" ]; then
-        # Always update client secret to match oidc-secret file
-        sed -i "s|^AUTH_OIDC_CLIENT_SECRET=.*|AUTH_OIDC_CLIENT_SECRET=\"${OIDC_CLIENT_SECRET}\"|" "${ENV_FILE}"
     fi
 done
 
