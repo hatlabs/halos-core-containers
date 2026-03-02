@@ -283,12 +283,13 @@ declare -A HOMARR_SSO_CONFIG=(
     ["AUTH_OIDC_ENABLE_DANGEROUS_ACCOUNT_LINKING"]="true"
 )
 
+# Always update all OIDC keys so that URL changes (e.g., routing scheme
+# migration) take effect on existing installs without manual intervention.
 for key in "${!HOMARR_SSO_CONFIG[@]}"; do
-    if ! grep -q "^${key}=" "${ENV_FILE}" 2>/dev/null; then
+    if grep -q "^${key}=" "${ENV_FILE}" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=\"${HOMARR_SSO_CONFIG[$key]}\"|" "${ENV_FILE}"
+    else
         echo "${key}=\"${HOMARR_SSO_CONFIG[$key]}\"" >> "${ENV_FILE}"
-    elif [ "${key}" = "AUTH_OIDC_CLIENT_SECRET" ]; then
-        # Always update client secret to match oidc-secret file
-        sed -i "s|^AUTH_OIDC_CLIENT_SECRET=.*|AUTH_OIDC_CLIENT_SECRET=\"${OIDC_CLIENT_SECRET}\"|" "${ENV_FILE}"
     fi
 done
 
