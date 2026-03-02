@@ -19,6 +19,51 @@ entryPoints:
     address: ":80"
   websecure:
     address: ":443"
+  # Per-app HTTPS entrypoints for port-based routing (4430-4450)
+  # Each app gets a dedicated port with TLS termination.
+  # Unused entrypoints return 404 — no overhead.
+  app-4430:
+    address: ":4430"
+  app-4431:
+    address: ":4431"
+  app-4432:
+    address: ":4432"
+  app-4433:
+    address: ":4433"
+  app-4434:
+    address: ":4434"
+  app-4435:
+    address: ":4435"
+  app-4436:
+    address: ":4436"
+  app-4437:
+    address: ":4437"
+  app-4438:
+    address: ":4438"
+  app-4439:
+    address: ":4439"
+  app-4440:
+    address: ":4440"
+  app-4441:
+    address: ":4441"
+  app-4442:
+    address: ":4442"
+  app-4443:
+    address: ":4443"
+  app-4444:
+    address: ":4444"
+  app-4445:
+    address: ":4445"
+  app-4446:
+    address: ":4446"
+  app-4447:
+    address: ":4447"
+  app-4448:
+    address: ":4448"
+  app-4449:
+    address: ":4449"
+  app-4450:
+    address: ":4450"
 
 log:
   level: INFO

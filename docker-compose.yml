@@ -10,6 +10,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "4430-4450:4430-4450"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./assets/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
@@ -56,16 +57,14 @@ services:
     labels:
       - traefik.enable=true
       # HTTP router (redirects to HTTPS)
-      - traefik.http.routers.authelia.rule=Host(`auth.${HALOS_DOMAIN}`)
+      - traefik.http.routers.authelia.rule=Host(`${HALOS_DOMAIN}`) && PathPrefix(`/auth/`)
       - traefik.http.routers.authelia.entrypoints=web
       - traefik.http.routers.authelia.middlewares=redirect-to-https@file
-      # HTTPS router
-      - traefik.http.routers.authelia-secure.rule=Host(`auth.${HALOS_DOMAIN}`)
+      # HTTPS router — Authelia served under /auth/ path prefix
+      - traefik.http.routers.authelia-secure.rule=Host(`${HALOS_DOMAIN}`) && PathPrefix(`/auth/`)
       - traefik.http.routers.authelia-secure.entrypoints=websecure
       - traefik.http.routers.authelia-secure.tls=true
       - traefik.http.services.authelia.loadbalancer.server.port=9091
-      # mDNS subdomain - halos-mdns-publisher publishes auth.${HALOS_DOMAIN}
-      - halos.subdomain=auth
     logging:
       driver: journald
       options:
@@ -107,8 +106,8 @@ services:
     command: ["bash", "run.sh"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
-      # Allow Homarr to resolve auth subdomain for OIDC (mDNS doesn't work in containers)
-      - "auth.${HALOS_DOMAIN}:host-gateway"
+      # Allow Homarr to resolve HALOS_DOMAIN for OIDC (mDNS doesn't work in containers)
+      - "${HALOS_DOMAIN}:host-gateway"
     environment:
       - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY}
       # Tell NextAuth the canonical HTTPS URL (behind Traefik proxy)
@@ -156,8 +155,6 @@ services:
       - traefik.http.routers.homarr-secure.entrypoints=websecure
       - traefik.http.routers.homarr-secure.tls=true
       - traefik.http.services.homarr.loadbalancer.server.port=7575
-      # mDNS subdomain - empty means root domain (${HALOS_DOMAIN})
-      - halos.subdomain=
     logging:
       driver: journald
       options:
