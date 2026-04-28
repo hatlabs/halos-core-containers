@@ -159,7 +159,9 @@ EOF
 chmod 644 "${TLS_CONFIG_FILE}"
 
 # Generate Cockpit path redirect configuration
-# Cockpit has native HTTPS on port 9090 — just a path redirect for discoverability
+# Cockpit has native HTTPS on port 9090 — just a path redirect for discoverability.
+# Path-only routing: any inbound Host on /cockpit/* is redirected, the regex
+# capture preserves Host. Auth still gates on Cockpit's own ForwardAuth at :9090.
 COCKPIT_CONFIG_FILE="${DYNAMIC_DIR}/cockpit.yml"
 cat > "${COCKPIT_CONFIG_FILE}" << EOF
 # Cockpit path redirect — /cockpit/ → :9090
@@ -167,7 +169,7 @@ cat > "${COCKPIT_CONFIG_FILE}" << EOF
 http:
   routers:
     cockpit-redirect:
-      rule: "Host(\`${HALOS_DOMAIN}\`) && PathPrefix(\`/cockpit/\`)"
+      rule: "PathPrefix(\`/cockpit/\`)"
       entrypoints:
         - websecure
       tls: {}
@@ -176,7 +178,7 @@ http:
       service: noop@internal
       priority: 100
     cockpit-redirect-bare:
-      rule: "Host(\`${HALOS_DOMAIN}\`) && Path(\`/cockpit\`)"
+      rule: "Path(\`/cockpit\`)"
       entrypoints:
         - websecure
       tls: {}
@@ -185,7 +187,7 @@ http:
       service: noop@internal
       priority: 101
     cockpit-redirect-http:
-      rule: "Host(\`${HALOS_DOMAIN}\`) && PathPrefix(\`/cockpit/\`)"
+      rule: "PathPrefix(\`/cockpit/\`)"
       entrypoints:
         - web
       middlewares:
@@ -193,7 +195,7 @@ http:
       service: noop@internal
       priority: 100
     cockpit-redirect-bare-http:
-      rule: "Host(\`${HALOS_DOMAIN}\`) && Path(\`/cockpit\`)"
+      rule: "Path(\`/cockpit\`)"
       entrypoints:
         - web
       middlewares:
