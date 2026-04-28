@@ -429,7 +429,9 @@ merge_oidc_clients() {
             continue
         fi
 
-        # Extract redirect_uris
+        # Extract redirect_uris and expand ${HALOS_DOMAIN} placeholder
+        # to one URI per configured DNS hostname (IPs excluded — see
+        # halos_expand_oidc_redirect_uri in lib-hostnames.sh).
         local redirect_uris=""
         local in_redirect=false
         while IFS= read -r line; do
@@ -439,9 +441,12 @@ merge_oidc_clients() {
             fi
             if $in_redirect; then
                 if echo "$line" | grep -qE '^[[:space:]]+-'; then
-                    local uri=$(echo "$line" | sed "s/^[[:space:]]*-[[:space:]]*//" | tr -d "'\"")
-                    uri="${uri//\$\{HALOS_DOMAIN\}/${HALOS_DOMAIN}}"
-                    redirect_uris="${redirect_uris}          - '${uri}'\n"
+                    local uri
+                    uri=$(echo "$line" | sed "s/^[[:space:]]*-[[:space:]]*//" | tr -d "'\"")
+                    while IFS= read -r expanded_uri; do
+                        [ -z "$expanded_uri" ] && continue
+                        redirect_uris="${redirect_uris}          - '${expanded_uri}'\n"
+                    done < <(halos_expand_oidc_redirect_uri "$uri")
                 elif echo "$line" | grep -qE '^[a-z_]+:'; then
                     break
                 fi

@@ -248,6 +248,42 @@ test_invalid_ipv4_octet_rejected() {
     assert_eq "$HALOS_HOSTNAMES_FALLBACK" "1" "invalid IPv4 octet must trigger fallback"
 }
 
+test_expand_redirect_uri_no_placeholder() {
+    local f="$TMPDIR_ROOT/exp1.conf"
+    write_conf "$f" "halosdev.local" "halosdev.example.com"
+    _reset_state "$f"
+    halos_load_hostnames
+    local out
+    out=$(halos_expand_oidc_redirect_uri "https://literal.example.com/cb")
+    assert_eq "$out" "https://literal.example.com/cb" "non-placeholder URI should pass through unchanged"
+}
+
+test_expand_redirect_uri_placeholder_per_dns() {
+    local f="$TMPDIR_ROOT/exp2.conf"
+    write_conf "$f" "halosdev.local" "halosdev.example.com" "10.0.0.50"
+    _reset_state "$f"
+    halos_load_hostnames
+    local out; out=$(halos_expand_oidc_redirect_uri 'https://${HALOS_DOMAIN}/api/auth/callback' | tr '\n' ',')
+    assert_eq "$out" "https://halosdev.local/api/auth/callback,https://halosdev.example.com/api/auth/callback," "placeholder must expand per DNS hostname (IPs excluded)"
+}
+
+test_expand_redirect_uri_subdomain_placeholder() {
+    local f="$TMPDIR_ROOT/exp3.conf"
+    write_conf "$f" "halosdev.local" "halosdev.example.com"
+    _reset_state "$f"
+    halos_load_hostnames
+    local out; out=$(halos_expand_oidc_redirect_uri 'https://auth.${HALOS_DOMAIN}/cb' | tr '\n' ',')
+    assert_eq "$out" "https://auth.halosdev.local/cb,https://auth.halosdev.example.com/cb," "subdomain placeholder must expand"
+}
+
+test_expand_redirect_uri_default_fallback() {
+    _reset_state "$TMPDIR_ROOT/missing.conf"
+    halos_load_hostnames
+    local short; short="$(hostname -s 2>/dev/null || hostname | cut -d. -f1)"
+    local out; out=$(halos_expand_oidc_redirect_uri 'https://${HALOS_DOMAIN}/cb' | tr '\n' ',')
+    assert_eq "$out" "https://${short}.local/cb," "fallback should expand to single canonical URI"
+}
+
 # ---------------------------------------------------------------------------
 
 run_test test_happy_path_dns_and_ip
@@ -264,6 +300,10 @@ run_test test_hash_stable_across_reorderings
 run_test test_hash_default_state_consistent
 run_test test_hash_changes_on_membership_change
 run_test test_invalid_ipv4_octet_rejected
+run_test test_expand_redirect_uri_no_placeholder
+run_test test_expand_redirect_uri_placeholder_per_dns
+run_test test_expand_redirect_uri_subdomain_placeholder
+run_test test_expand_redirect_uri_default_fallback
 
 echo ""
 echo "Passed: $PASSES   Failed: $FAILS"

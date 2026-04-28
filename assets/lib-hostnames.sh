@@ -238,3 +238,21 @@ halos_hostnames_hash() {
     [ -z "${HALOS_HOSTNAMES_CANONICAL:-}" ] && halos_load_hostnames
     halos_all_hostnames | LC_ALL=C sort | sha256sum | awk '{print $1}'
 }
+
+# halos_expand_oidc_redirect_uri <uri>
+#   If <uri> contains the literal token ${HALOS_DOMAIN}, emit one expanded
+#   URI per DNS hostname (IP entries are deliberately excluded — IPs do not
+#   make valid OIDC redirect_uris). If <uri> has no placeholder, emit it
+#   unchanged. Always writes to stdout, one URI per line.
+halos_expand_oidc_redirect_uri() {
+    [ -z "${HALOS_HOSTNAMES_CANONICAL:-}" ] && halos_load_hostnames
+    local uri="$1"
+    if [[ "$uri" != *'${HALOS_DOMAIN}'* ]]; then
+        printf '%s\n' "$uri"
+        return 0
+    fi
+    local h
+    for h in "${HALOS_HOSTNAMES_DNS[@]}"; do
+        printf '%s\n' "${uri//\$\{HALOS_DOMAIN\}/$h}"
+    done
+}
