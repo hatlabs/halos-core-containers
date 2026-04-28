@@ -62,12 +62,12 @@ services:
       - authelia-internal
     labels:
       - traefik.enable=true
-      # HTTP router (redirects to HTTPS)
-      - traefik.http.routers.authelia.rule=Host(`${HALOS_DOMAIN}`) && PathPrefix(`/sso/`)
+      # HTTP router (redirects to HTTPS) — path-only so any inbound Host reaches /sso/
+      - traefik.http.routers.authelia.rule=PathPrefix(`/sso/`)
       - traefik.http.routers.authelia.entrypoints=web
       - traefik.http.routers.authelia.middlewares=redirect-to-https@file
-      # HTTPS router — Authelia served under /sso/ path prefix
-      - traefik.http.routers.authelia-secure.rule=Host(`${HALOS_DOMAIN}`) && PathPrefix(`/sso/`)
+      # HTTPS router — Authelia served under /sso/ path prefix on any reachable Host
+      - traefik.http.routers.authelia-secure.rule=PathPrefix(`/sso/`)
       - traefik.http.routers.authelia-secure.entrypoints=websecure
       - traefik.http.routers.authelia-secure.tls=true
       - traefik.http.services.authelia.loadbalancer.server.port=9091
@@ -158,14 +158,19 @@ services:
       - proxy
     labels:
       - traefik.enable=true
-      # HTTP router (redirects to HTTPS)
-      - traefik.http.routers.homarr.rule=Host(`${HALOS_DOMAIN}`)
+      # HTTP router (redirects to HTTPS) — path-only catch-all on any inbound Host.
+      # Explicit priority: 1 so /sso/, /cockpit/, and per-app paths win.
+      - traefik.http.routers.homarr.rule=PathPrefix(`/`)
       - traefik.http.routers.homarr.entrypoints=web
       - traefik.http.routers.homarr.middlewares=redirect-to-https@file
-      # HTTPS router - Homarr handles auth via OIDC (no ForwardAuth needed)
-      - traefik.http.routers.homarr-secure.rule=Host(`${HALOS_DOMAIN}`)
+      - traefik.http.routers.homarr.priority=1
+      # HTTPS router — Homarr handles auth via OIDC (no ForwardAuth needed).
+      # Path-only catch-all with explicit priority: 1 so higher-priority routers
+      # (cockpit, per-app redirects) take precedence on their specific paths.
+      - traefik.http.routers.homarr-secure.rule=PathPrefix(`/`)
       - traefik.http.routers.homarr-secure.entrypoints=websecure
       - traefik.http.routers.homarr-secure.tls=true
+      - traefik.http.routers.homarr-secure.priority=1
       - traefik.http.services.homarr.loadbalancer.server.port=7575
     logging:
       driver: journald
