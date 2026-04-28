@@ -100,6 +100,23 @@ function deploy-build {
   deploy "$@"
 }
 
+################################################################################
+# Test Commands
+
+function test {
+  #@ Run shell-library tests
+  #@ Category: Test
+  local fail=0
+  for test_script in tests/test-*.sh; do
+    [ -e "$test_script" ] || continue
+    echo "=== Running $test_script ==="
+    if ! bash "$test_script"; then
+      fail=1
+    fi
+  done
+  return $fail
+}
+
 function status {
   #@ Show installed package version on test server
   #@ Category: Deploy
