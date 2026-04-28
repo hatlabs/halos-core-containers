@@ -91,6 +91,24 @@ halos-core-containers/
 - **config.yml**: User-configurable settings (optional)
 - **icon.png**: Application icon (256x256, PNG format)
 
+## Hostname-list contract
+
+`/etc/halos/hostnames.conf` is the admin-managed source of truth for every
+hostname this device answers to (cert SANs, Authelia cookies, OIDC
+`redirect_uris`). The shared loader at
+`/usr/lib/halos-core-containers/lib-hostnames.sh` is sourced by
+`prestart.sh`, `configure-container-routing`, and `reload-oidc-clients`;
+do not duplicate parsing logic — extend the loader instead.
+
+**OIDC client snippet placeholder convention.** App `prestart.sh` scripts
+that drop OIDC client snippets into `/etc/halos/oidc-clients.d/` should
+write `redirect_uris` entries with the literal token `${HALOS_DOMAIN}`
+preserved (use `<<'EOF'` heredoc, or escape as `\${HALOS_DOMAIN}` in an
+unquoted heredoc). The merger in `prestart.sh` and `reload-oidc-clients`
+expands the placeholder to one URI per configured DNS hostname; entries
+without the placeholder pass through unchanged but only authenticate via
+the literal hostname they hard-code.
+
 ## Building
 
 **Requirements**: `container-packaging-tools` installed
