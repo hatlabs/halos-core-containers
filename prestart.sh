@@ -22,9 +22,20 @@ set +a
 # Create runtime directory
 mkdir -p "${RUN_DIR}"
 
-# Auto-detect domain from hostname (matches mDNS publisher)
+# Load hostname list — the canonical hostname becomes HALOS_DOMAIN.
+# Falls back to ${hostname}.local when /etc/halos/hostnames.conf is
+# missing/invalid; HALOS_HOSTNAMES_FALLBACK is set in that case.
+LIB_HOSTNAMES="/usr/lib/halos-core-containers/lib-hostnames.sh"
+if [ ! -f "$LIB_HOSTNAMES" ]; then
+    # Source from package assets when running uninstalled (development).
+    LIB_HOSTNAMES="${SCRIPT_DIR}/assets/lib-hostnames.sh"
+fi
+# shellcheck source=assets/lib-hostnames.sh
+. "$LIB_HOSTNAMES"
+halos_load_hostnames
+
 HOSTNAME_SHORT=$(hostname -s 2>/dev/null || hostname | cut -d. -f1)
-HALOS_DOMAIN="${HOSTNAME_SHORT}.local"
+HALOS_DOMAIN="$(halos_canonical_hostname)"
 
 # Write common runtime environment
 cat > "${RUNTIME_ENV}" << EOF
@@ -64,15 +75,26 @@ DOMAIN_FILE="${CERTS_DIR}/.domain"
 
 mkdir -p "${CERTS_DIR}"
 
-# Check if certificate needs to be (re)generated
+# Check if certificate needs to be (re)generated.
+# Change-detection: SHA256 hash of the sorted hostname list, stored in
+# ${DOMAIN_FILE}. Three-state read:
+#   - file absent          → regenerate
+#   - exactly 64 hex chars → compare as hash
+#   - anything else        → legacy hostname string from older versions; regenerate once
+HOSTNAMES_HASH="$(halos_hostnames_hash)"
 NEED_CERT=false
 if [ ! -f "${CERT_FILE}" ] || [ ! -f "${KEY_FILE}" ]; then
     echo "Certificate files not found, generating..."
     NEED_CERT=true
 elif [ -f "${DOMAIN_FILE}" ]; then
-    STORED_DOMAIN=$(cat "${DOMAIN_FILE}")
-    if [ "${STORED_DOMAIN}" != "${HALOS_DOMAIN}" ]; then
-        echo "Domain changed from ${STORED_DOMAIN} to ${HALOS_DOMAIN}, regenerating certificate..."
+    STORED=$(cat "${DOMAIN_FILE}")
+    if [[ "${STORED}" =~ ^[0-9a-f]{64}$ ]]; then
+        if [ "${STORED}" != "${HOSTNAMES_HASH}" ]; then
+            echo "Hostname list changed, regenerating certificate..."
+            NEED_CERT=true
+        fi
+    else
+        echo "Legacy domain sentinel detected, migrating to hostname-list hash..."
         NEED_CERT=true
     fi
 else
@@ -81,15 +103,37 @@ else
 fi
 
 if [ "${NEED_CERT}" = true ]; then
-    echo "Generating self-signed TLS certificate for ${HALOS_DOMAIN}..."
+    # Build subjectAltName: DNS: entries followed by IP: entries, sorted
+    # for deterministic output. Each value passed through the loader has
+    # already been validated; we still quote at use site (defense-in-depth).
+    SAN_ENTRIES=""
+    while IFS= read -r dns_entry; do
+        [ -z "$dns_entry" ] && continue
+        SAN_ENTRIES="${SAN_ENTRIES}${SAN_ENTRIES:+,}DNS:${dns_entry}"
+    done < <(halos_dns_hostnames | LC_ALL=C sort)
+    if [ "${#HALOS_HOSTNAMES_IPS[@]}" -gt 0 ]; then
+        while IFS= read -r ip_entry; do
+            [ -z "$ip_entry" ] && continue
+            SAN_ENTRIES="${SAN_ENTRIES}${SAN_ENTRIES:+,}IP:${ip_entry}"
+        done < <(printf '%s\n' "${HALOS_HOSTNAMES_IPS[@]}" | LC_ALL=C sort)
+    fi
+
+    echo "Generating self-signed TLS certificate (CN=${HALOS_DOMAIN}, SANs=${SAN_ENTRIES})..."
+    KEY_NEW="${KEY_FILE}.new"
+    CERT_NEW="${CERT_FILE}.new"
     openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-        -keyout "${KEY_FILE}" \
-        -out "${CERT_FILE}" \
+        -keyout "${KEY_NEW}" \
+        -out "${CERT_NEW}" \
         -subj "/CN=${HALOS_DOMAIN}" \
-        -addext "subjectAltName=DNS:${HALOS_DOMAIN}"
-    chmod 600 "${KEY_FILE}"
-    chmod 644 "${CERT_FILE}"
-    echo "${HALOS_DOMAIN}" > "${DOMAIN_FILE}"
+        -addext "subjectAltName=${SAN_ENTRIES}"
+    chmod 600 "${KEY_NEW}"
+    chmod 644 "${CERT_NEW}"
+    # Atomic swap: key first (Traefik tolerates a brief key-without-cert
+    # window better than the inverse), then cert. Traefik only reloads
+    # when tls-default.yml mtime changes (re-touched below).
+    mv "${KEY_NEW}" "${KEY_FILE}"
+    mv "${CERT_NEW}" "${CERT_FILE}"
+    printf '%s' "${HOSTNAMES_HASH}" > "${DOMAIN_FILE}"
     echo "Certificate generated successfully"
 else
     echo "Using existing certificate for ${HALOS_DOMAIN}"
